@@ -337,11 +337,13 @@ Ver el archivo [CHANGELOG.md](./CHANGELOG.md) para el historial completo de camb
 
 ## 🤝 Contribuciones
 
-Las contribuciones son bienvenidas. Por favor:
+Las contribuciones son bienvenidas. Consulta la guía completa en [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+En resumen:
 
 1. Haz un fork del repositorio.
-2. Crea una rama para tu feature (`git checkout -b feature/mi-feature`).
-3. Realiza tus cambios y haz commit (`git commit -m 'Agrega mi feature'`).
+2. Crea una rama descriptiva (`git checkout -b feature/mi-feature`).
+3. Haz commit siguiendo [Conventional Commits](https://www.conventionalcommits.org/es/) (`git commit -m 'feat(sri): ...'`).
 4. Sube tu rama (`git push origin feature/mi-feature`).
 5. Abre un **Merge Request** en [Minka Gob Ec](https://minka.gob.ec/angelo_barzola/api-facturacion-electronica-sri).
 
