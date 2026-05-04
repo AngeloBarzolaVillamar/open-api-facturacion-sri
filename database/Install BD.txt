@@ -1,0 +1,46 @@
+# 1. DIAGNÓSTICO INICIAL
+/www/server/pgsql/bin/psql --version
+sudo -u postgres /www/server/pgsql/bin/psql -d db_sri -c "\dx"
+
+# 2. DETENER POSTGRESQL
+sudo -u postgres /www/server/pgsql/bin/pg_ctl -D /www/server/pgsql/data stop -m fast
+
+# 3. COMPILAR UUID-OSSP
+cd /usr/local/pgsql/contrib/uuid-ossp
+sudo rm -f /www/server/pgsql/lib/uuid-ossp* /www/server/pgsql/share/extension/uuid-ossp*
+make clean
+make
+sudo make install
+
+# 4. INICIAR POSTGRESQL
+sudo -u postgres /www/server/pgsql/bin/pg_ctl -D /www/server/pgsql/data start
+
+# 5. INSTALAR EXTENSIÓN EN db_sri
+sudo -u postgres /www/server/pgsql/bin/psql -d db_sri1 -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
+
+# 6. VERIFICAR
+sudo -u postgres /www/server/pgsql/bin/psql -d db_sri1 -c "\dx"
+sudo -u postgres /www/server/pgsql/bin/psql -d db_sri -c "SELECT uuid_generate_v4();"
+
+# 7. REINICIAR AAPANEL
+bt restart
+
+
+
+-------- luego de instalar la extensión, pasamos a crear el esquema de extensiones ----------
+
+
+-- 1) crea el schema "extensions" si no existe
+CREATE SCHEMA IF NOT EXISTS extensions;
+
+-- 2) instala uuid-ossp dentro de ese schema
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA extensions;
+
+
+
+si algo sale mal ejecutar:
+
+DROP SCHEMA public CASCADE;
+CREATE SCHEMA public;
+
+

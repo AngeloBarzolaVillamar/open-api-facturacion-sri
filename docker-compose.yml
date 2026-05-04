@@ -1,0 +1,93 @@
+# =================================================
+# Docker Compose - Open API Facturación SRI (Development)
+# =================================================
+# Usage: docker compose up -d --build
+#
+# This file reads from .env.docker for configuration.
+# Copy .env.docker.example to .env.docker and customize.
+
+services:
+  # ─── Redis (BullMQ + Cache) ───
+  redis:
+    image: redis:7-alpine
+    container_name: open-api-redis
+    restart: unless-stopped
+    command: >
+      /bin/sh -c '
+      if [ -n "${REDIS_PASSWORD:-}" ]; then
+        exec redis-server --requirepass "${REDIS_PASSWORD}" --maxmemory 256mb --maxmemory-policy noeviction --appendonly yes
+      else
+        exec redis-server --maxmemory 256mb --maxmemory-policy noeviction --appendonly yes
+      fi
+      '
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '5m'
+        max-file: '2'
+
+  # ─── Open API Facturación SRI ───
+  open-api-facturacion-sri:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: open-api-facturacion-sri
+    restart: unless-stopped
+    env_file:
+      - .env.docker
+    environment:
+      # BUG-06/11: Conectar a Redis dentro del compose network
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+
+    # Port mapping
+    ports:
+      - '${PORT:-3001}:3001'
+
+    # Volume mounts for persistent data
+    volumes:
+      - ${HOST_TEMPLATES_PATH:-../templates}:/data/templates
+      - ${HOST_PDFS_PATH:-../pdfs}:/data/pdfs
+      - ${HOST_CERTS_PATH:-../certs}:/data/certs
+      - ${HOST_XMLS_PATH:-../xmls}:/data/xmls
+
+    depends_on:
+      redis:
+        condition: service_healthy
+
+    # Health check
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'wget',
+          '--no-verbose',
+          '--tries=1',
+          '--spider',
+          'http://localhost:3001/status',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+    # Logging
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+volumes:
+  redis_data:
+    driver: local

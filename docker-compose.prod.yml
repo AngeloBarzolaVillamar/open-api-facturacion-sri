@@ -1,0 +1,104 @@
+# =================================================
+# Docker Compose for Production Server
+# =================================================
+# This file goes on your SERVER - no source code needed!
+#
+# Recommended structure on server:
+#   /opt/
+#   ├── open-api-facturacion-sri/           ← Deploy folder
+#   │   ├── docker-compose.prod.yml
+#   │   └── .env.docker
+#   └── data/                  ← Data folder (OUTSIDE deploy)
+#       ├── templates/
+#       ├── pdfs/
+#       ├── certs/
+#       └── xmls/
+#
+# Usage:
+#   docker compose -f docker-compose.prod.yml up -d
+
+services:
+  # ─── Redis (BullMQ + Cache) ───
+  redis:
+    image: redis:7-alpine
+    container_name: carbone-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:-changeme_prod}
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+      --save 60 1000
+    volumes:
+      - redis_data:/data
+    # No exponer puertos al host en producción — solo acceso interno
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD:-changeme_prod}', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '5m'
+        max-file: '3'
+
+  # ─── Open API Facturación SRI ───
+  open-api-facturacion-sri:
+    # Pull from Docker Hub
+    image: ${DOCKER_IMAGE:-angelobarzola/open-api-facturacion-sri:latest}
+    container_name: open-api-facturacion-sri
+    restart: unless-stopped
+
+    # Load environment variables from file
+    env_file:
+      - .env.docker
+
+    environment:
+      # Override Redis to use compose service name
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-changeme_prod}
+
+    # Port mapping (change left port if needed)
+    ports:
+      - '${PORT:-3001}:3001'
+
+    # Data volumes - persistent storage
+    volumes:
+      - ${HOST_TEMPLATES_PATH:-../data/templates}:/data/templates
+      - ${HOST_PDFS_PATH:-../data/pdfs}:/data/pdfs
+      - ${HOST_CERTS_PATH:-../data/certs}:/data/certs
+      - ${HOST_XMLS_PATH:-../data/xmls}:/data/xmls
+
+    depends_on:
+      redis:
+        condition: service_healthy
+
+    # Health check
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'wget',
+          '--no-verbose',
+          '--tries=1',
+          '--spider',
+          'http://localhost:3001/status',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+    # Logging configuration
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '5'
+
+volumes:
+  redis_data:
+    driver: local

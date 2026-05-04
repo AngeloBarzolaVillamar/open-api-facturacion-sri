@@ -1,0 +1,2362 @@
+{
+  "info": {
+    "_postman_id": "103b712a-cb2a-4bb0-9fff-d6db874c9c24",
+    "name": "SRI-EC | API",
+    "description": "Health check y autenticación JWT.\n\nCredenciales por defecto:\n- Email: superadmin@openapi-sri.com\n- Password: Admin123!\n\nRoles: SUPERADMIN, ADMIN, USER",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "15427023",
+    "_collection_link": "https://go.postman.co/collection/15427023-103b712a-cb2a-4bb0-9fff-d6db874c9c24?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "1.- Estado (Health Check)",
+      "item": [
+        {
+          "name": "GET / — Raíz",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                ""
+              ]
+            },
+            "description": "Redirige a /status (HTTP 302)."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /status — Estado del Servidor",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/status",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "status"
+              ]
+            },
+            "description": "Retorna estado completo: versión, base de datos, memoria, uptime. Sin autenticación."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2.- Autenticación",
+      "item": [
+        {
+          "name": "POST /auth/login — Iniciar Sesión",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.accessToken) {",
+                  "    pm.collectionVariables.set('token', res.accessToken);",
+                  "    pm.test('Token guardado', () => pm.expect(res.accessToken).to.be.a('string'));",
+                  "}",
+                  "if (res.refreshToken) pm.collectionVariables.set('refreshToken', res.refreshToken);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"superadmin@openapi-sri.com\",\n  \"password\": \"Admin123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/auth/login",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Inicia sesión y obtiene tokens JWT. Rate limit: 5 intentos/min. El token se guarda automáticamente."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /auth/refresh — Refrescar Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.accessToken) pm.collectionVariables.set('token', res.accessToken);",
+                  "if (res.refreshToken) pm.collectionVariables.set('refreshToken', res.refreshToken);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/auth/refresh",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "Renueva el accessToken usando el refreshToken."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /auth/register — Registrar Usuario (SUPERADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nuevo.usuario@empresa.com\",\n  \"password\": \"Password123!\",\n  \"rol\": \"ADMIN\",\n  \"tenantId\": \"{{tenantId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/auth/register",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Crea usuario. Requiere SUPERADMIN. Roles: SUPERADMIN, ADMIN, USER."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /auth/me — Mi Perfil",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/auth/me",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Retorna datos del usuario autenticado: id, email, rol, tenantId."
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /auth/change-password — Cambiar Contraseña",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"Admin123!\",\n  \"newPassword\": \"NuevaPassword456!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/auth/change-password",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "auth",
+                "change-password"
+              ]
+            },
+            "description": "Cambia la contraseña del usuario autenticado."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3.- Tenants (SUPERADMIN)",
+      "item": [
+        {
+          "name": "GET /tenants — Listar Todos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/tenants",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "tenants"
+              ]
+            },
+            "description": "Lista todos los tenants. Requiere SUPERADMIN."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /tenants/:id — Obtener por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/tenants/{{tenantId}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}"
+              ]
+            },
+            "description": "Obtiene tenant por UUID. Requiere SUPERADMIN."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /tenants — Crear Tenant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.id) pm.collectionVariables.set('tenantId', res.id);",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Empresa Demo S.A.\",\n  \"plan\": \"Plan Pro\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/tenants",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "tenants"
+              ]
+            },
+            "description": "Crea tenant. Requiere SUPERADMIN. El ID se guarda en tenantId."
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /tenants/:id — Actualizar Tenant",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Empresa Actualizada\",\n  \"plan\": \"Plan PRO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/tenants/{{tenantId}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}"
+              ]
+            },
+            "description": "Actualiza tenant. Requiere SUPERADMIN."
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /tenants/:id — Inactivar Tenant",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/tenants/{{tenantId}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "tenants",
+                "{{tenantId}}"
+              ]
+            },
+            "description": "Inactiva tenant (soft delete). Requiere SUPERADMIN."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4.- Emisores",
+      "item": [
+        {
+          "name": "GET /emisores — Listar Emisores",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/emisores",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "emisores"
+              ]
+            },
+            "description": "SUPERADMIN: todos. ADMIN/USER: solo los de su tenant."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /emisores/:id — Obtener por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/emisores/{{emisorId}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "emisores",
+                "{{emisorId}}"
+              ]
+            },
+            "description": "Obtiene emisor por UUID. Valida acceso por tenant."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /emisores — Crear Emisor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.id) pm.collectionVariables.set('emisorId', res.id);",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ruc\": \"0000000000001\",\n  \"razonSocial\": \"EMPRESA DEMO S.A.\",\n  \"nombreComercial\": \"Demo Comercial\",\n  \"direccionMatriz\": \"Av. Principal 123, Guayaquil\",\n  \"ambiente\": \"1\", //pruebas(1) //produccion(2)\n  \"obligadoContabilidad\": true,\n  \"agenteRetencion\": \"false\", // arreglar porque pide texto en este parametro\n  \"contribuyenteRimpe\": false,\n  \"tenantId\": \"{{tenantId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/emisores",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "emisores"
+              ]
+            },
+            "description": "Crea emisor. ambiente: PRUEBAS|PRODUCCION. El ID se guarda en emisorId."
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /emisores/:id — Actualizar Emisor",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razonSocial\": \"EMPRESA DEMO S.AX\",\n  \"nombreComercial\": \"Demo ComercialX\",\n  \"direccionMatriz\": \"Av. Principal 123, Guayaquil\",\n  \"ambiente\": \"1\", //pruebas(1) //produccion(2)\n  \"obligadoContabilidad\": true,\n  \"agenteRetencion\": \"false\", // arreglar porque pide texto en este parametro\n  \"contribuyenteRimpe\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/emisores/{{emisorId}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "emisores",
+                "{{emisorId}}"
+              ]
+            },
+            "description": "Actualiza emisor. Valida acceso por tenant."
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /emisores/:id — Inactivar Emisor",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/emisores/{{emisorId}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "emisores",
+                "{{emisorId}}"
+              ]
+            },
+            "description": "Inactiva emisor (soft delete). Valida acceso por tenant."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5.- P12",
+      "item": [
+        {
+          "name": "DELETE /certificates/delete-cert/:fileName — Eliminar Certificado",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/certificates/delete-cert/{{certFileName}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "certificates",
+                "delete-cert",
+                "{{certFileName}}"
+              ]
+            },
+            "description": "Elimina certificado .p12 y limpia los campos de certificado en emisores asociados."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /certificates/validate-cert/:fileName — Validar Certificado",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"PasswordCertificado123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/certificates/validate-cert/{{certFileName}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "certificates",
+                "validate-cert",
+                "{{certFileName}}"
+              ]
+            },
+            "description": "Valida certificado existente con contraseña: verifica que no esté vencido y que la contraseña sea correcta."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /certificates/upload-cert — Subir Certificado P12",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "cert",
+                  "type": "file",
+                  "uuid": "7553656a-f8bf-492b-88d3-e32bb6b9eb91",
+                  "src": "/ruta/al/certificado.p12"
+                },
+                {
+                  "key": "password",
+                  "value": "PasswordCertificado123",
+                  "type": "text",
+                  "uuid": "30b3d392-4025-4085-8867-919640f45f8d"
+                },
+                {
+                  "key": "ruc",
+                  "value": "0000000000001",
+                  "type": "text",
+                  "uuid": "5acac989-7f15-4df5-a4ac-e956bd47a564"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{url}}/certificates/upload-cert",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "certificates",
+                "upload-cert"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /certificates/cert-info/:fileName — Info del Certificado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/certificates/cert-info/{{certFileName}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "certificates",
+                "cert-info",
+                "{{certFileName}}"
+              ]
+            },
+            "description": "Obtiene metadatos del certificado: sujeto, emisor, vigencia, serial."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /certificates/list-certs — Listar Certificados",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/certificates/list-certs?page=1&limit=10",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "certificates",
+                "list-certs"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Lista certificados .p12 disponibles con paginación."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "6.- Puntos de Emisión",
+      "item": [
+        {
+          "name": "GET /emisores/puntos-emision/:emisorId — Listar Puntos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/emisores/puntos-emision/{{emisorId}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "emisores",
+                "puntos-emision",
+                "{{emisorId}}"
+              ]
+            },
+            "description": "Lista puntos de emisión activos de un emisor con sus secuenciales."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /emisores/puntos-emision/:emisorId/:puntoEmisionId — Obtener Punto",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/emisores/puntos-emision/{{emisorId}}/{{puntoEmisionId}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "emisores",
+                "puntos-emision",
+                "{{emisorId}}",
+                "{{puntoEmisionId}}"
+              ]
+            },
+            "description": "Obtiene un punto de emisión con todos sus secuenciales."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /emisores/puntos-emision/:emisorId — Crear Punto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.id) pm.collectionVariables.set('puntoEmisionId', res.id);",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"establecimiento\": \"001\",\n  \"puntoEmision\": \"001\",\n  \"direccionEstablecimiento\": \"Av. Principal 123, Guayaquil\",\n  \"descripcion\": \"Oficina Principal\"\n}\n\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/emisores/puntos-emision/{{emisorId}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "emisores",
+                "puntos-emision",
+                "{{emisorId}}"
+              ]
+            },
+            "description": "Crea punto de emisión e inicializa secuenciales para todos los tipos (01,04,05,06,07). Error 409 si ya existe."
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /emisores/puntos-emision/:emisorId/:puntoEmisionId — Actualizar",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"direccionEstablecimiento\": \"Av. Principal 123, GuayaquilXX\",\n  \"descripcion\": \"Oficina PrincipalXX\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/emisores/puntos-emision/{{emisorId}}/{{puntoEmisionId}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "emisores",
+                "puntos-emision",
+                "{{emisorId}}",
+                "{{puntoEmisionId}}"
+              ]
+            },
+            "description": "Actualiza descripción y/o dirección del punto de emisión."
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /emisores/puntos-emision/:emisorId/:puntoEmisionId — Inactivar",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/emisores/puntos-emision/{{emisorId}}/{{puntoEmisionId}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "emisores",
+                "puntos-emision",
+                "{{emisorId}}",
+                "{{puntoEmisionId}}"
+              ]
+            },
+            "description": "Inactiva punto de emisión (soft delete)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "7.-Secuenciales",
+      "item": [
+        {
+          "name": "GET /emisores/secuenciales/:emisorId — Todos del Emisor",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/emisores/secuenciales/{{emisorId}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "emisores",
+                "secuenciales",
+                "{{emisorId}}"
+              ]
+            },
+            "description": "Todos los secuenciales de todos los puntos del emisor."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /emisores/secuenciales/:emisorId/:puntoEmisionId — De un Punto",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/emisores/secuenciales/{{emisorId}}/{{puntoEmisionId}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "emisores",
+                "secuenciales",
+                "{{emisorId}}",
+                "{{puntoEmisionId}}"
+              ]
+            },
+            "description": "Secuenciales de un punto específico (uno por tipo de comprobante)."
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /emisores/secuenciales/:emisorId/:puntoEmisionId/:tipo — Actualizar",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ultimoSecuencial\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/emisores/secuenciales/{{emisorId}}/{{puntoEmisionId}}/01",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "emisores",
+                "secuenciales",
+                "{{emisorId}}",
+                "{{puntoEmisionId}}",
+                "01"
+              ]
+            },
+            "description": "Modifica secuencial de un tipo. Tipos: 01=Factura, 04=NC, 05=ND, 06=Guía, 07=Retención. Error 400 si valor negativo."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "8.- Emision de comprobantes",
+      "item": [
+        {
+          "name": "POST /sri/emitir/factura — Emitir Factura",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.claveAcceso) pm.collectionVariables.set('claveAcceso', res.claveAcceso);",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"fechaEmision\": \"07/02/2026\",\n    \"emisor\": {\n        \"ruc\": \"0000000000001\",\n        \"razonSocial\": \"CARLOS ANTONIO MERA LEON\",\n        \"nombreComercial\": \"MERA SERVICIOS\",\n        \"dirMatriz\": \"Guayaquil, Ecuador\",\n        \"dirEstablecimiento\": \"Guayaquil, Local Principal\",\n        \"establecimiento\": \"001\",\n        \"puntoEmision\": \"001\",\n        \"obligadoContabilidad\": \"SI\"\n    },\n    \"comprador\": {\n        \"tipoIdentificacion\": \"05\",\n        \"identificacion\": \"0957771397\",\n        \"razonSocial\": \"PEDRO GONZALEZ RUIZ\",\n        \"direccion\": \"Quito, Ecuador\"\n    },\n    \"detalles\": [\n        {\n            \"codigoPrincipal\": \"SERV001\",\n            \"codigoAuxiliar\": \"AUX001\",\n            \"descripcion\": \"Consultoría Empresarial 1\",\n            \"cantidad\": 1,\n            \"precioUnitario\": 50.00,\n            \"descuento\": 10.00,\n            \"impuestos\": [\n                {\n                    \"codigo\": \"2\",\n                    \"codigoPorcentaje\": \"4\",\n                    \"tarifa\": 15,\n                    \"baseImponible\": 50.00,\n                    \"valor\": 7.50\n                }\n            ]\n        },\n        {\n            \"codigoPrincipal\": \"SERV002\",\n            \"codigoAuxiliar\": \"AUX002\",\n            \"descripcion\": \"Consultoría Empresarial 2\",\n            \"cantidad\": 2,\n            \"precioUnitario\": 30.00,\n            \"descuento\": 5.00,\n            \"impuestos\": [\n                {\n                    \"codigo\": \"2\",\n                    \"codigoPorcentaje\": \"4\",\n                    \"tarifa\": 15,\n                    \"baseImponible\": 55.00,\n                    \"valor\": 8.25\n                }\n            ]\n        },\n        {\n            \"codigoPrincipal\": \"SERV003\",\n            \"codigoAuxiliar\": \"AUX003\",\n            \"descripcion\": \"Servicio Técnico 3\",\n            \"cantidad\": 3,\n            \"precioUnitario\": 20.00,\n            \"descuento\": 0.00,\n            \"impuestos\": [\n                {\n                    \"codigo\": \"2\",\n                    \"codigoPorcentaje\": \"4\",\n                    \"tarifa\": 15,\n                    \"baseImponible\": 60.00,\n                    \"valor\": 9.00\n                }\n            ]\n        },\n        {\n            \"codigoPrincipal\": \"SERV004\",\n            \"codigoAuxiliar\": \"AUX004\",\n            \"descripcion\": \"Servicio Técnico 4\",\n            \"cantidad\": 1,\n            \"precioUnitario\": 100.00,\n            \"descuento\": 10.00,\n            \"impuestos\": [\n                {\n                    \"codigo\": \"2\",\n                    \"codigoPorcentaje\": \"4\",\n                    \"tarifa\": 15,\n                    \"baseImponible\": 90.00,\n                    \"valor\": 13.50\n                }\n            ]\n        },\n        {\n            \"codigoPrincipal\": \"SERV005\",\n            \"codigoAuxiliar\": \"AUX005\",\n            \"descripcion\": \"Desarrollo Software 5\",\n            \"cantidad\": 1,\n            \"precioUnitario\": 200.00,\n            \"descuento\": 20.00,\n            \"impuestos\": [\n                {\n                    \"codigo\": \"2\",\n                    \"codigoPorcentaje\": \"4\",\n                    \"tarifa\": 15,\n                    \"baseImponible\": 180.00,\n                    \"valor\": 27.00\n                }\n            ]\n        },\n        {\n            \"codigoPrincipal\": \"SERV006\",\n            \"codigoAuxiliar\": \"AUX006\",\n            \"descripcion\": \"Desarrollo Software 6\",\n            \"cantidad\": 2,\n            \"precioUnitario\": 80.00,\n            \"descuento\": 0.00,\n            \"impuestos\": [\n                {\n                    \"codigo\": \"2\",\n                    \"codigoPorcentaje\": \"4\",\n                    \"tarifa\": 15,\n                    \"baseImponible\": 160.00,\n                    \"valor\": 24.00\n                }\n            ]\n        },\n        {\n            \"codigoPrincipal\": \"SERV007\",\n            \"codigoAuxiliar\": \"AUX007\",\n            \"descripcion\": \"Soporte Técnico 7\",\n            \"cantidad\": 5,\n            \"precioUnitario\": 10.00,\n            \"descuento\": 0.00,\n            \"impuestos\": [\n                {\n                    \"codigo\": \"2\",\n                    \"codigoPorcentaje\": \"4\",\n                    \"tarifa\": 15,\n                    \"baseImponible\": 50.00,\n                    \"valor\": 7.50\n                }\n            ]\n        },\n        {\n            \"codigoPrincipal\": \"SERV008\",\n            \"codigoAuxiliar\": \"AUX008\",\n            \"descripcion\": \"Soporte Técnico 8\",\n            \"cantidad\": 2,\n            \"precioUnitario\": 25.00,\n            \"descuento\": 5.00,\n            \"impuestos\": [\n                {\n                    \"codigo\": \"2\",\n                    \"codigoPorcentaje\": \"4\",\n                    \"tarifa\": 15,\n                    \"baseImponible\": 45.00,\n                    \"valor\": 6.75\n                }\n            ]\n        },\n        {\n            \"codigoPrincipal\": \"SERV009\",\n            \"codigoAuxiliar\": \"AUX009\",\n            \"descripcion\": \"Capacitación 9\",\n            \"cantidad\": 1,\n            \"precioUnitario\": 150.00,\n            \"descuento\": 0.00,\n            \"impuestos\": [\n                {\n                    \"codigo\": \"2\",\n                    \"codigoPorcentaje\": \"4\",\n                    \"tarifa\": 15,\n                    \"baseImponible\": 150.00,\n                    \"valor\": 22.50\n                }\n            ]\n        },\n        {\n            \"codigoPrincipal\": \"SERV010\",\n            \"codigoAuxiliar\": \"AUX010\",\n            \"descripcion\": \"Capacitación 10\",\n            \"cantidad\": 1,\n            \"precioUnitario\": 120.00,\n            \"descuento\": 20.00,\n            \"impuestos\": [\n                {\n                    \"codigo\": \"2\",\n                    \"codigoPorcentaje\": \"4\",\n                    \"tarifa\": 15,\n                    \"baseImponible\": 100.00,\n                    \"valor\": 15.00\n                }\n            ]\n        },\n        {\n            \"codigoPrincipal\": \"SERV011\",\n            \"codigoAuxiliar\": \"AUX011\",\n            \"descripcion\": \"Mantenimiento 11\",\n            \"cantidad\": 3,\n            \"precioUnitario\": 40.00,\n            \"descuento\": 0.00,\n            \"impuestos\": [\n                {\n                    \"codigo\": \"2\",\n                    \"codigoPorcentaje\": \"4\",\n                    \"tarifa\": 15,\n                    \"baseImponible\": 120.00,\n                    \"valor\": 18.00\n                }\n            ]\n        },\n        {\n            \"codigoPrincipal\": \"SERV012\",\n            \"codigoAuxiliar\": \"AUX012\",\n            \"descripcion\": \"Mantenimiento 12\",\n            \"cantidad\": 2,\n            \"precioUnitario\": 60.00,\n            \"descuento\": 10.00,\n            \"impuestos\": [\n                {\n                    \"codigo\": \"2\",\n                    \"codigoPorcentaje\": \"4\",\n                    \"tarifa\": 15,\n                    \"baseImponible\": 110.00,\n                    \"valor\": 16.50\n                }\n            ]\n        },\n        {\n            \"codigoPrincipal\": \"SERV013\",\n            \"codigoAuxiliar\": \"AUX013\",\n            \"descripcion\": \"Auditoría 13\",\n            \"cantidad\": 1,\n            \"precioUnitario\": 300.00,\n            \"descuento\": 50.00,\n            \"impuestos\": [\n                {\n                    \"codigo\": \"2\",\n                    \"codigoPorcentaje\": \"4\",\n                    \"tarifa\": 15,\n                    \"baseImponible\": 250.00,\n                    \"valor\": 37.50\n                }\n            ]\n        },\n        {\n            \"codigoPrincipal\": \"SERV014\",\n            \"codigoAuxiliar\": \"AUX014\",\n            \"descripcion\": \"Auditoría 14\",\n            \"cantidad\": 1,\n            \"precioUnitario\": 180.00,\n            \"descuento\": 0.00,\n            \"impuestos\": [\n                {\n                    \"codigo\": \"2\",\n                    \"codigoPorcentaje\": \"4\",\n                    \"tarifa\": 15,\n                    \"baseImponible\": 180.00,\n                    \"valor\": 27.00\n                }\n            ]\n        },\n        {\n            \"codigoPrincipal\": \"SERV015\",\n            \"codigoAuxiliar\": \"AUX015\",\n            \"descripcion\": \"Consultoría Final 15\",\n            \"cantidad\": 2,\n            \"precioUnitario\": 75.00,\n            \"descuento\": 10.00,\n            \"impuestos\": [\n                {\n                    \"codigo\": \"2\",\n                    \"codigoPorcentaje\": \"4\",\n                    \"tarifa\": 15,\n                    \"baseImponible\": 140.00,\n                    \"valor\": 21.00\n                }\n            ]\n        }\n    ],\n    \"pagos\": [\n        {\n            \"formaPago\": \"01\",\n            \"total\": 0\n        }\n    ],\n    \"infoAdicional\": [\n        {\n            \"nombre\": \"Vendedor\",\n            \"valor\": \"Carlos Mera\"\n        },\n        {\n            \"nombre\": \"Orden\",\n            \"valor\": \"ORD-2026-001\"\n        }\n    ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/sri/emitir/factura",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "sri",
+                "emitir",
+                "factura"
+              ]
+            },
+            "description": "Genera, firma y envía factura al SRI.\n\nEl secuencial se auto-genera si se omite.\nLa claveAcceso se guarda automáticamente.\n\nRate limit: 10 facturas/min por IP."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /sri/emitir/nota-credito — Emitir Nota de Crédito",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.claveAcceso) pm.collectionVariables.set('claveAcceso', res.claveAcceso);",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fechaEmision\": \"17/04/2026\",\n  \"emisor\": {\n    \"ruc\": \"0000000000001\",\n    \"razonSocial\": \"CARLOS ANTONIO MERA LEON\",\n    \"nombreComercial\": \"MERA SERVICIOS\",\n    \"dirMatriz\": \"Guayaquil, Ecuador\",\n    \"dirEstablecimiento\": \"Guayaquil, Local Principal\",\n    \"establecimiento\": \"001\",\n    \"puntoEmision\": \"001\",\n    \"obligadoContabilidad\": \"SI\"\n  },\n  \"comprador\": {\n    \"tipoIdentificacion\": \"05\",\n    \"identificacion\": \"0926789017\",\n    \"razonSocial\": \"PEDRO GONZALEZ RUIZ\",\n    \"direccion\": \"Quito, Ecuador\",\n    \"email\": \"pedro@test.com\"\n  },\n  \"codDocModificado\": \"01\",\n  \"numDocModificado\": \"001-001-000000001\",\n  \"fechaEmisionDocSustento\": \"11/01/2026\",\n  \"motivo\": \"Devolución total del servicio de consultoría\",\n  \"detalles\": [\n    {\n      \"codigoPrincipal\": \"PROD100\",\n      \"codigoAuxiliar\": \"AUX-001\",\n      \"descripcion\": \"Consultoría empresarial - DEVOLUCION TOTAL\",\n      \"cantidad\": 1,\n      \"precioUnitario\": 100.00,\n      \"descuento\": 0,\n      \"detallesAdicionales\": [\n        { \"nombre\": \"Motivo\", \"valor\": \"Insatisfacción del clienteXXX\" }\n      ],\n      \"impuestos\": [\n        {\n          \"codigo\": \"2\",\n          \"codigoPorcentaje\": \"4\",\n          \"tarifa\": 15,\n          \"baseImponible\": 100.00,\n          \"valor\": 15.00\n        }\n      ]\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/sri/emitir/nota-credito",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "sri",
+                "emitir",
+                "nota-credito"
+              ]
+            },
+            "description": "Emite nota de crédito electrónica.\n\nReferencia el documento modificado (factura original) con codDocModificado=01 y numDocModificado."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /sri/emitir/nota-debito — Emitir Nota de Débito",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.claveAcceso) pm.collectionVariables.set('claveAcceso', res.claveAcceso);",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fechaEmision\": \"17/04/2026\",\n  \"emisor\": {\n    \"ruc\": \"0000000000001\",\n    \"razonSocial\": \"CARLOS ANTONIO MERA LEON\",\n    \"nombreComercial\": \"MERA SERVICIOS\",\n    \"dirMatriz\": \"Guayaquil, Ecuador\",\n    \"dirEstablecimiento\": \"Guayaquil, Local Principal\",\n    \"establecimiento\": \"001\",\n    \"puntoEmision\": \"001\",\n    \"obligadoContabilidad\": \"SI\"\n  },\n  \"comprador\": {\n    \"tipoIdentificacion\": \"05\",\n    \"identificacion\": \"0926789017\",\n    \"razonSocial\": \"PEDRO GONZALEZ RUIZ\",\n    \"direccion\": \"Quito, Ecuador\",\n    \"email\": \"pedro@test.com\"\n  },\n  \"codDocModificado\": \"01\",\n  \"numDocModificado\": \"001-001-000000003\",\n  \"fechaEmisionDocSustento\": \"11/01/2026\",\n  \"motivos\": [\n    {\n      \"razon\": \"Cargo por intereses de mora en pago\",\n      \"valor\": 15.00\n    }\n  ],\n  \"impuestos\": [\n    {\n      \"codigo\": \"2\",\n      \"codigoPorcentaje\": \"4\",\n      \"tarifa\": 15,\n      \"baseImponible\": 15.00,\n      \"valor\": 2.25\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/sri/emitir/nota-debito",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "sri",
+                "emitir",
+                "nota-debito"
+              ]
+            },
+            "description": "Emite nota de débito electrónica.\n\nIncluye motivos (cargos adicionales) e impuestos del total."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /sri/emitir/retencion — Emitir Retención",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.claveAcceso) pm.collectionVariables.set('claveAcceso', res.claveAcceso);",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fechaEmision\": \"17/04/2026\",\n  \"periodoFiscal\": \"01/2026\",\n  \"emisor\": {\n    \"ruc\": \"0000000000001\",\n    \"razonSocial\": \"CARLOS ANTONIO MERA LEON\",\n    \"nombreComercial\": \"MERA SERVICIOS\",\n    \"dirMatriz\": \"Guayaquil, Ecuador\",\n    \"dirEstablecimiento\": \"Guayaquil, Local Principal\",\n    \"establecimiento\": \"001\",\n    \"puntoEmision\": \"001\",\n    \"obligadoContabilidad\": \"SI\"\n  },\n  \"sujetoRetenido\": {\n    \"tipoIdentificacion\": \"04\",\n    \"identificacion\": \"0926789017001\",\n    \"razonSocial\": \"EMPRESA EJEMPLO S.A.\",\n    \"direccion\": \"Quito, Ecuador\",\n    \"email\": \"empresa@test.com\",\n    \"tipoSujetoRetenido\": \"02\" \n  },\n  \"impuestos\": [\n    {\n      \"codigo\": \"1\",\n      \"codigoRetencion\": \"312\",\n      \"baseImponible\": 100.00,\n      \"porcentajeRetener\": 1.75,\n      \"valorRetenido\": 1.75,\n      \"codDocSustento\": \"01\",\n      \"numDocSustento\": \"001-001-000000123\",\n      \"fechaEmisionDocSustento\": \"01/02/2026\",\n      \"totalSinImpuestos\": 100.00,\n      \"importeTotal\": 112.00,\n      \"pagoLocExt\": \"01\",\n      \"codSustento\": \"02\", \n      \"formaPago\": \"16\", \n      \"impuestosDocSustento\": [\n        {\n          \"codImpuestoDocSustento\": \"2\",\n          \"codigoPorcentaje\": \"2\",\n          \"baseImponible\": 100.00,\n          \"tarifa\": 12.00,\n          \"valorImpuesto\": 12.00\n        }\n      ]\n    }\n  ]\n}\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/sri/emitir/retencion",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "sri",
+                "emitir",
+                "retencion"
+              ]
+            },
+            "description": "Emite comprobante de retención electrónico.\n\nImpuesto codigo: 1=Renta, 2=IVA, 6=ISD\nCada impuesto referencia su documento sustento con impuestosDocSustento."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /sri/preview/factura — Vista Previa XML (sin firmar)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ambiente\": \"1\",\n  \"tipoEmision\": \"1\",\n  \"fechaEmision\": \"11/01/2026\",\n  \"secuencial\": \"000001011\",\n  \"emisor\": {\n    \"ruc\": \"0000000000001\",\n    \"razonSocial\": \"CARLOS ANTONIO MERA LEON\",\n    \"nombreComercial\": \"MERA SERVICIOS\",\n    \"dirMatriz\": \"Guayaquil, Ecuador\",\n    \"dirEstablecimiento\": \"Guayaquil, Local Principal\",\n    \"establecimiento\": \"001\",\n    \"puntoEmision\": \"001\",\n    \"obligadoContabilidad\": \"SI\"\n  },\n  \"comprador\": {\n    \"tipoIdentificacion\": \"05\",\n    \"identificacion\": \"0926789012\",\n    \"razonSocial\": \"PEDRO GONZALEZ RUIZ\",\n    \"direccion\": \"Quito, Ecuador\",\n    \"email\": \"pedro@test.com\"\n  },\n  \"detalles\": [\n    {\n      \"codigoPrincipal\": \"PROD100\",\n      \"descripcion\": \"Consultoría empresarial\",\n      \"cantidad\": 1,\n      \"precioUnitario\": 100.00,\n      \"descuento\": 0,\n      \"impuestos\": [\n        {\n          \"codigo\": \"2\",\n          \"codigoPorcentaje\": \"4\",\n          \"tarifa\": 15,\n          \"baseImponible\": 100.00,\n          \"valor\": 15.00\n        }\n      ]\n    }\n  ],\n  \"pagos\": [\n    {\n      \"formaPago\": \"01\",\n      \"total\": 115.00\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/sri/preview/factura",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "sri",
+                "preview",
+                "factura"
+              ]
+            },
+            "description": "Genera XML de factura sin firmar ni enviar. Útil para previsualización."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /sri/emitir/guia-remision — Emitir Guía de Remisión",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.claveAcceso) pm.collectionVariables.set('claveAcceso', res.claveAcceso);",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fechaIniTransporte\": \"17/04/2026\",\n  \"fechaFinTransporte\": \"17/04/2026\",\n  \"emisor\": {\n    \"ruc\": \"0000000000001\",\n    \"razonSocial\": \"CARLOS ANTONIO MERA LEON\",\n    \"nombreComercial\": \"MERA SERVICIOS\",\n    \"dirMatriz\": \"Guayaquil, Ecuador\",\n    \"dirEstablecimiento\": \"Guayaquil, Local Principal\",\n    \"establecimiento\": \"001\",\n    \"puntoEmision\": \"001\",\n    \"obligadoContabilidad\": \"SI\"\n  },\n  \"dirPartida\": \"Guayaquil, Av. Principal 123\",\n  \"razonSocialTransportista\": \"TRANSPORTES ECUADOR S.A.\",\n  \"tipoIdentificacionTransportista\": \"04\",\n  \"rucTransportista\": \"0957771397001\",\n  \"placa\": \"ABC-1234\",\n  \"destinatarios\": [\n    {\n      \"tipoIdentificacionDestinatario\": \"05\",\n      \"identificacionDestinatario\": \"0926789017\",\n      \"razonSocialDestinatario\": \"PEDRO GONZALEZ RUIZ\",\n      \"dirDestinatario\": \"Quito, Ecuador\",\n      \"emailDestinatario\": \"pedro.gonzalez@email.com\",\n      \"motivoTraslado\": \"Venta de mercadería\",\n      \"codDocSustento\": \"01\",\n      \"numDocSustento\": \"001-001-000000008\",\n      \"fechaEmisionDocSustento\": \"28/01/2026\",\n      \"detalles\": [\n        {\n          \"codigoInterno\": \"PROD100\",\n          \"descripcion\": \"Producto de prueba\",\n          \"cantidad\": 10\n        }\n      ]\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/sri/emitir/guia-remision",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "sri",
+                "emitir",
+                "guia-remision"
+              ]
+            },
+            "description": "Emite guía de remisión electrónica.\n\nIncluye datos de transportista, placa, fechas de transporte y destinatarios con detalles de productos."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /sri/validar — Validar XML (File Upload)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "description": "Archivo XML firmado a validar",
+                  "value": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{url}}/sri/validar",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "sri",
+                "validar"
+              ]
+            },
+            "description": "Valida estructura de un XML firmado subiendo el archivo .xml. Retorna {valido, errores[]}."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /sri/debug/factura-firmada — Debug: Factura Firmada sin Enviar",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ambiente\": \"1\",\n  \"tipoEmision\": \"1\",\n  \"fechaEmision\": \"11/01/2026\",\n  \"secuencial\": \"000001010\",\n  \"emisor\": {\n    \"ruc\": \"0000000000001\",\n    \"razonSocial\": \"CARLOS ANTONIO MERA LEON\",\n    \"nombreComercial\": \"MERA SERVICIOS\",\n    \"dirMatriz\": \"Guayaquil, Ecuador\",\n    \"dirEstablecimiento\": \"Guayaquil, Local Principal\",\n    \"establecimiento\": \"001\",\n    \"puntoEmision\": \"001\",\n    \"obligadoContabilidad\": \"SI\"\n  },\n  \"comprador\": {\n    \"tipoIdentificacion\": \"05\",\n    \"identificacion\": \"0926789012\",\n    \"razonSocial\": \"PEDRO GONZALEZ RUIZ\",\n    \"direccion\": \"Quito, Ecuador\",\n    \"email\": \"pedro@test.com\"\n  },\n  \"detalles\": [\n    {\n      \"codigoPrincipal\": \"PROD100\",\n      \"descripcion\": \"Consultoría empresarial\",\n      \"cantidad\": 1,\n      \"precioUnitario\": 100.00,\n      \"descuento\": 0,\n      \"impuestos\": [\n        {\n          \"codigo\": \"2\",\n          \"codigoPorcentaje\": \"4\",\n          \"tarifa\": 15,\n          \"baseImponible\": 100.00,\n          \"valor\": 15.00\n        }\n      ]\n    }\n  ],\n  \"pagos\": [\n    {\n      \"formaPago\": \"01\",\n      \"total\": 115.00\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/sri/debug/factura-firmada",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "sri",
+                "debug",
+                "factura-firmada"
+              ]
+            },
+            "description": "Genera factura firmada XAdES-BES sin enviar al SRI. Solo disponible en entorno no-producción. Retorna claveAcceso, xmlSinFirma y xmlFirmado."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "9.- Consultas",
+      "item": [
+        {
+          "name": "GET /sri/comprobantes — Listar Comprobantes (Paginado + Filtros)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/sri/comprobantes?page=1&limit=20",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "sri",
+                "comprobantes"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "rucEmisor",
+                  "value": "0000000000001",
+                  "disabled": true
+                },
+                {
+                  "key": "identificacionComprador",
+                  "value": "0992345678001",
+                  "disabled": true
+                },
+                {
+                  "key": "tipoComprobante",
+                  "value": "01",
+                  "description": "01=Factura, 04=NC, 05=ND, 06=Guía, 07=Retención",
+                  "disabled": true
+                },
+                {
+                  "key": "estado",
+                  "value": "AUTORIZADO",
+                  "description": "PENDIENTE, RECIBIDA, DEVUELTA, AUTORIZADO, NO_AUTORIZADO, EN_PROCESO, RECHAZADO, ANULADO",
+                  "disabled": true
+                },
+                {
+                  "key": "fechaDesde",
+                  "value": "2026-01-01",
+                  "description": "YYYY-MM-DD",
+                  "disabled": true
+                },
+                {
+                  "key": "fechaHasta",
+                  "value": "2026-12-31",
+                  "description": "YYYY-MM-DD",
+                  "disabled": true
+                },
+                {
+                  "key": "establecimiento",
+                  "value": "001",
+                  "disabled": true
+                },
+                {
+                  "key": "puntoEmision",
+                  "value": "001",
+                  "disabled": true
+                },
+                {
+                  "key": "secuencial",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "fechaEmision",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "DESC",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lista paginada de comprobantes con filtros opcionales. SUPERADMIN ve todos; otros usuarios solo los de su tenant.\n\nActive los query params deshabilitados para filtrar."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /sri/comprobantes/:claveAcceso — Detalle de Comprobante",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/sri/comprobantes/{{claveAcceso}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "sri",
+                "comprobantes",
+                "{{claveAcceso}}"
+              ]
+            },
+            "description": "Obtiene detalle completo de un comprobante por su clave de acceso (49 dígitos)."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /sri/comprobantes/:claveAcceso/xml — Descargar XML Autorizado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/sri/comprobantes/{{claveAcceso}}/xml",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "sri",
+                "comprobantes",
+                "{{claveAcceso}}",
+                "xml"
+              ]
+            },
+            "description": "Descarga el XML autorizado del comprobante como archivo .xml (Content-Type: application/xml)."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /sri/autorizar/:claveAcceso — Consultar Autorización SRI",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/sri/autorizar/{{claveAcceso}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "sri",
+                "autorizar",
+                "{{claveAcceso}}"
+              ]
+            },
+            "description": "Consulta el estado de autorización de un comprobante por clave de acceso directamente al SRI."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /sri/verificar/:claveAcceso — Verificar Estado en SRI",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/sri/verificar/{{claveAcceso}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "sri",
+                "verificar",
+                "{{claveAcceso}}"
+              ]
+            },
+            "description": "Consulta directamente al SRI el estado de autorización. NO modifica la BD local.\n\nRetorna: existeEnSri, estado, fechaAutorizacion, sincronizado (si coincide con estado local)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "10.- Gestión",
+      "item": [
+        {
+          "name": "PATCH /sri/comprobantes/:claveAcceso/anular — Anular Comprobante",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/sri/comprobantes/{{claveAcceso}}/anular",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "sri",
+                "comprobantes",
+                "{{claveAcceso}}",
+                "anular"
+              ]
+            },
+            "description": "Marca comprobante como ANULADO. Solo para comprobantes NO autorizados por el SRI.\n\nError 400: No se puede anular un comprobante ya autorizado."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /sri/comprobantes/:claveAcceso/reintentar — Reintentar Envío",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/sri/comprobantes/{{claveAcceso}}/reintentar",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "sri",
+                "comprobantes",
+                "{{claveAcceso}}",
+                "reintentar"
+              ]
+            },
+            "description": "Reenvía al SRI un comprobante con estado DEVUELTA o RECHAZADO.\n\nRetorna: claveAcceso, estado actualizado, errores si los hay."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /sri/sincronizar — Sincronizar con SRI (Batch)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estados\": [\"PENDIENTE\", \"EN_PROCESO\", \"DEVUELTA\"],\n  \"reintentar\": false,\n  \"limite\": 50,\n  \"rucEmisor\": \"0000000000001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/sri/sincronizar",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "sri",
+                "sincronizar"
+              ]
+            },
+            "description": "Sincronización batch: consulta SRI para comprobantes pendientes y actualiza estado local.\n\nFlujo inteligente: consulta → si autorizado actualiza BD → si no existe puede reintentar.\n\nrucEmisor obligatorio para usuarios no-SUPERADMIN.\n\nRetorna: procesados, actualizados, reintentados, errores, detalle[]."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "11.- Catálogos Sri",
+      "item": [
+        {
+          "name": "Listar Tipos de Identificación",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/catalogos/tipos-identificacion",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "catalogos",
+                "tipos-identificacion"
+              ]
+            },
+            "description": "Obtiene todos los tipos de identificación válidos. Ej: 04=RUC, 05=Cédula, 06=Pasaporte, 07=Consumidor Final, 08=Identificación del Exterior."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Documentos Sustento",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/catalogos/documentos-sustento",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "catalogos",
+                "documentos-sustento"
+              ]
+            },
+            "description": "Obtiene todos los códigos de documentos sustento válidos para retenciones. Ej: 01=Factura, 04=Nota de Crédito, 05=Nota de Débito."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Tarifas de Impuestos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/catalogos/impuestos",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "catalogos",
+                "impuestos"
+              ]
+            },
+            "description": "Obtiene todas las tarifas de impuestos vigentes (IVA, ICE, IRBPNR). Retorna código, nombre y tarifas con codigoPorcentaje, descripcion y porcentaje."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Códigos de Retención",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/catalogos/retenciones",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "catalogos",
+                "retenciones"
+              ]
+            },
+            "description": "Obtiene todos los códigos de retención vigentes agrupados por tipo: RENTA (codigoImpuesto=1) e IVA (codigoImpuesto=2)."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Motivos de Traslado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/catalogos/motivos-traslado",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "catalogos",
+                "motivos-traslado"
+              ]
+            },
+            "description": "Obtiene todos los motivos de traslado válidos para guías de remisión."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Formas de Pago",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/catalogos/formas-pago",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "catalogos",
+                "formas-pago"
+              ]
+            },
+            "description": "Obtiene todas las formas de pago válidas del SRI. Ej: 01=Sin utilización del sistema financiero, 16=Tarjeta de débito, 19=Tarjeta de crédito, 20=Otros con utilización del sistema financiero."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "12.- WebHooks",
+      "item": [
+        {
+          "name": "Listar Webhooks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/webhooks?emisorId=",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "webhooks"
+              ],
+              "query": [
+                {
+                  "key": "emisorId",
+                  "value": "",
+                  "description": "Filtrar por emisor (opcional)"
+                }
+              ]
+            },
+            "description": "Lista webhooks configurados. SUPERADMIN ve todos; otros usuarios ven solo los de su tenant. Se puede filtrar por emisorId."
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener Webhook por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/webhooks/{{webhook_id}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "webhooks",
+                "{{webhook_id}}"
+              ]
+            },
+            "description": "Obtiene los detalles de un webhook específico por su ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar Webhook (Lógico)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/webhooks/{{webhook_id}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "webhooks",
+                "{{webhook_id}}"
+              ]
+            },
+            "description": "Inactiva un webhook (eliminación lógica). El webhook no se borra, se marca como inactivo."
+          },
+          "response": []
+        },
+        {
+          "name": "Regenerar Secreto",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/webhooks/{{webhook_id}}/regenerar-secreto",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "webhooks",
+                "{{webhook_id}}",
+                "regenerar-secreto"
+              ]
+            },
+            "description": "Regenera el secreto de firma de un webhook. El secreto anterior queda invalidado inmediatamente."
+          },
+          "response": []
+        },
+        {
+          "name": "Crear Webhook",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.id) {",
+                  "        pm.collectionVariables.set('webhook_id', json.id);",
+                  "        console.log('webhook_id guardado:', json.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Notificación Comprobantes\",\n  \"url\": \"https://keen-fox-08.webhook.cool\",\n  \"eventos\": [\"comprobante.autorizado\", \"comprobante.rechazado\"],\n  \"emisorId\": \"\",\n  \"reintentosMax\": 3\n}"
+            },
+            "url": {
+              "raw": "{{url}}/webhooks",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "webhooks"
+              ]
+            },
+            "description": "Crea un nuevo webhook. Campos: nombre (requerido), url (requerido, URL válida), eventos (requerido, array no vacío), emisorId (opcional), reintentosMax (opcional, 0-10, default 3)."
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar Webhook",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Notificación Actualizada\",\n  \"url\": \"https://keen-fox-08.webhook.cool\",\n  \"eventos\": [\"comprobante.autorizado\", \"comprobante.rechazado\", \"comprobante.anulado\"],\n  \"activo\": true,\n  \"reintentosMax\": 3\n}"
+            },
+            "url": {
+              "raw": "{{url}}/webhooks/{{webhook_id}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "webhooks",
+                "{{webhook_id}}"
+              ]
+            },
+            "description": "Actualiza un webhook existente. Todos los campos son opcionales: nombre, url, eventos, activo (boolean), reintentosMax (0-10)."
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener Logs de Webhook",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/webhooks/{{webhook_id}}/logs?page=1&limit=50",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "webhooks",
+                "{{webhook_id}}",
+                "logs"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Número de página"
+                },
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "description": "Elementos por página (máx. 100)"
+                }
+              ]
+            },
+            "description": "Obtiene los logs de ejecución de un webhook paginados. Incluye: data, total, page, totalPages."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Eventos Disponibles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/webhooks/eventos",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "webhooks",
+                "eventos"
+              ]
+            },
+            "description": "Lista todos los eventos disponibles para suscripción: comprobante.creado, comprobante.autorizado, comprobante.rechazado, comprobante.anulado, comprobante.enviado, certificado.por_vencer, certificado.vencido."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "13.- Templates",
+      "item": [
+        {
+          "name": "Listar Templates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/templates",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "templates"
+              ]
+            },
+            "description": "Lista todos los templates con metadatos: nombre, ID, tamaño, extensión, formato soportado, fecha de modificación. Incluye resumen con totalTemplates, supportedFormats, totalSize."
+          },
+          "response": []
+        },
+        {
+          "name": "Subir Template",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "template",
+                  "type": "file",
+                  "description": "Archivo template (.docx, .odt, .html, .xlsx, .ods) máx. 10MB",
+                  "src": [
+                    "",
+                    "/ruta/al/template.docx"
+                  ]
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{url}}/templates/upload",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "templates",
+                "upload"
+              ]
+            },
+            "description": "Sube un nuevo template. Formatos soportados: .docx, .odt, .html, .xlsx, .ods. Máximo 10MB."
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar Template",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/templates/{{template_id}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "templates",
+                "{{template_id}}"
+              ]
+            },
+            "description": "Elimina un template por ID (nombre con o sin extensión)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "14.- Documents",
+      "item": [
+        {
+          "name": "Obtener Formatos Soportados",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/documents/formats",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "documents",
+                "formats"
+              ]
+            },
+            "description": "Obtiene la lista de formatos de salida soportados y sus MIME types."
+          },
+          "response": []
+        },
+        {
+          "name": "Generar Documento y Descargar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Output-Format",
+                "value": "xlsx",
+                "description": "Formato de salida: xlsx, pdf, docx, odt, html, etc."
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonData\": {\n    \"titulo\": \"Reporte Ventas\",\n    \"periodo\": \"Mayo 2026\",\n    \"items\": [\n      { \"descripcion\": \"Producto A\", \"cantidad\": 10, \"total\": 100.00 },\n      { \"descripcion\": \"Producto B\", \"cantidad\": 5, \"total\": 75.00 }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{url}}/documents/download/{{template_id}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "documents",
+                "download",
+                "{{template_id}}"
+              ]
+            },
+            "description": "Genera un documento en el formato especificado y lo descarga. El formato se puede indicar por: header X-Output-Format (prioridad alta), query ?format=, o body.format (prioridad baja)."
+          },
+          "response": []
+        },
+        {
+          "name": "Generar Documento y Guardar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Output-Format",
+                "value": "pdf",
+                "description": "Formato de salida"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonData\": {\n    \"titulo\": \"Reporte Ventas\",\n    \"periodo\": \"Mayo 2026\",\n    \"items\": [\n      { \"descripcion\": \"Producto A\", \"cantidad\": 10, \"total\": 100.00 },\n      { \"descripcion\": \"Producto B\", \"cantidad\": 5, \"total\": 75.00 }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{url}}/documents/save/{{template_id}}?format=pdf",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "documents",
+                "save",
+                "{{template_id}}"
+              ],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "pdf",
+                  "description": "Formato alternativo via query param"
+                }
+              ]
+            },
+            "description": "Genera un documento, lo guarda en el servidor y retorna el enlace con fileName, fileUrl, format, fileSize y templateUsed."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "15.-PDF Generation",
+      "item": [
+        {
+          "name": "Generar PDF y Descargar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonData\": {\n    \"titulo\": \"Factura Ejemplo\",\n    \"numero\": \"001-001-000000001\",\n    \"fecha\": \"03/05/2026\",\n    \"cliente\": \"Juan Pérez\",\n    \"total\": \"125.50\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{url}}/generate-pdf/download/{{template_id}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "generate-pdf",
+                "download",
+                "{{template_id}}"
+              ]
+            },
+            "description": "Genera un PDF usando un template y datos JSON, retorna el archivo para descarga directa. El body puede ser {jsonData: {...}} o datos directos."
+          },
+          "response": []
+        },
+        {
+          "name": "Generar PDF y Guardar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonData\": {\n    \"titulo\": \"Factura Ejemplo\",\n    \"numero\": \"001-001-000000001\",\n    \"fecha\": \"03/05/2026\",\n    \"cliente\": \"Juan Pérez\",\n    \"total\": \"125.50\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{url}}/generate-pdf/save/{{template_id}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "generate-pdf",
+                "save",
+                "{{template_id}}"
+              ]
+            },
+            "description": "Genera un PDF, lo guarda en el servidor y retorna el enlace de descarga con fileName, fileUrl, fileSize y templateUsed."
+          },
+          "response": []
+        },
+        {
+          "name": "Generar PDF con Imágenes y Descargar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonData\": {\n    \"titulo\": \"Documento con Logo\",\n    \"empresa\": \"Mi Empresa S.A.\"\n  },\n  \"images\": [\n    {\n      \"url\": \"http://localhost:3000/images/logo.png\",\n      \"placeholder\": \"{{logo}}\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{url}}/generate-pdf/with-images/download/{{template_id}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "generate-pdf",
+                "with-images",
+                "download",
+                "{{template_id}}"
+              ]
+            },
+            "description": "Genera un PDF con imágenes embebidas y lo descarga. El campo images es un array con url y placeholder para cada imagen."
+          },
+          "response": []
+        },
+        {
+          "name": "Generar PDF con Imágenes y Guardar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonData\": {\n    \"titulo\": \"Documento con Logo\",\n    \"empresa\": \"Mi Empresa S.A.\"\n  },\n  \"images\": [\n    {\n      \"url\": \"http://localhost:3000/images/logo.png\",\n      \"placeholder\": \"{{logo}}\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{url}}/generate-pdf/with-images/save/{{template_id}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "generate-pdf",
+                "with-images",
+                "save",
+                "{{template_id}}"
+              ]
+            },
+            "description": "Genera un PDF con imágenes, lo guarda y retorna enlace. Incluye imagesAdded en la respuesta."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar PDFs por Tipo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/generate-pdf/list/others?page=1&limit=10",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "generate-pdf",
+                "list",
+                "others"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Número de página (opcional)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Elementos por página (opcional)"
+                }
+              ]
+            },
+            "description": "Lista PDFs por tipo. Tipos válidos: con_firma, others, documents. Soporta paginación opcional. Sin paginación retorna todos los archivos."
+          },
+          "response": []
+        },
+        {
+          "name": "Subir PDF",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "pdf",
+                  "type": "file",
+                  "description": "Archivo PDF a subir (máx. 50MB)",
+                  "value": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{url}}/generate-pdf/upload/others",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "generate-pdf",
+                "upload",
+                "others"
+              ]
+            },
+            "description": "Sube un archivo PDF al servidor. Tipos válidos para upload: con_firma, others. Máximo 50MB. Solo archivos .pdf."
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar PDF",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/generate-pdf/others/documento_ejemplo.pdf",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "generate-pdf",
+                "others",
+                "documento_ejemplo.pdf"
+              ]
+            },
+            "description": "Elimina un PDF del servidor. Tipos válidos: con_firma, others, documents. El fileName debe terminar en .pdf (excepto para type=documents)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "16.- Cargar Imágenes",
+      "item": [
+        {
+          "name": "Subir Imagen",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "description": "Imagen a subir (PNG, JPEG, GIF, WEBP) máx. 10MB",
+                  "value": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{url}}/images/upload",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "images",
+                "upload"
+              ]
+            },
+            "description": "Sube una imagen al servidor. Formatos permitidos: PNG, JPEG, JPG, GIF, WEBP. Máximo 10MB. Retorna fileName, fileUrl, size y mimetype."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Imágenes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/images/list?page=1&limit=10",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "images",
+                "list"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Número de página (opcional)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Elementos por página (opcional)"
+                }
+              ]
+            },
+            "description": "Lista todas las imágenes almacenadas con paginación opcional. Retorna images, total y pagination."
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar Imagen",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/images/1234567890_logo.png",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "images",
+                "1234567890_logo.png"
+              ]
+            },
+            "description": "Elimina una imagen por nombre de archivo."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "17.- Firmado electrónico PDF",
+      "item": [
+        {
+          "name": "Firmar PDF Existente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"certFile\": \"{{cert_file}}\",\n  \"password\": \"{{cert_password}}\",\n  \"position\": {\n    \"page\": 1,\n    \"x\": 50,\n    \"y\": 50,\n    \"width\": 200,\n    \"height\": 50\n  }\n}"
+            },
+            "url": {
+              "raw": "{{url}}/signature/sign-pdf/documento_ejemplo.pdf",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "signature",
+                "sign-pdf",
+                "documento_ejemplo.pdf"
+              ]
+            },
+            "description": "Firma un PDF existente en el servidor. Requiere certFile (nombre del .p12) y password. El campo position es opcional para ubicar la firma visible (page, x, y, width, height). El PDF firmado se guarda en pdfs/con_firma/. Valida que el certificado no esté vencido."
+          },
+          "response": []
+        },
+        {
+          "name": "Generar y Firmar PDF",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonData\": {\n    \"titulo\": \"Factura Firmada\",\n    \"numero\": \"001-001-000000001\",\n    \"fecha\": \"03/05/2026\",\n    \"cliente\": \"Juan Pérez\",\n    \"total\": \"250.00\"\n  },\n  \"certFile\": \"{{cert_file}}\",\n  \"password\": \"{{cert_password}}\",\n  \"position\": {\n    \"page\": 1,\n    \"x\": 350,\n    \"y\": 700,\n    \"width\": 200,\n    \"height\": 50\n  }\n}"
+            },
+            "url": {
+              "raw": "{{url}}/signature/generate-sign-pdf/{{template_id}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "signature",
+                "generate-sign-pdf",
+                "{{template_id}}"
+              ]
+            },
+            "description": "Genera un PDF con el template y datos JSON, luego lo firma digitalmente con el certificado P12 en un solo paso. Guarda el PDF firmado y retorna signedFile (fileName, fileUrl, fileSize) y templateUsed."
+          },
+          "response": []
+        },
+        {
+          "name": "Generar, Firmar y Descargar PDF",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jsonData\": {\n    \"titulo\": \"Factura Firmada\",\n    \"numero\": \"001-001-000000002\",\n    \"fecha\": \"03/05/2026\",\n    \"cliente\": \"María López\",\n    \"total\": \"180.75\"\n  },\n  \"certFile\": \"{{cert_file}}\",\n  \"password\": \"{{cert_password}}\",\n  \"position\": {}\n}"
+            },
+            "url": {
+              "raw": "{{url}}/signature/generate-sign-pdf/download/{{template_id}}",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "signature",
+                "generate-sign-pdf",
+                "download",
+                "{{template_id}}"
+              ]
+            },
+            "description": "Genera un PDF, lo firma digitalmente y lo retorna como descarga directa (no lo guarda en el servidor). El Content-Type de respuesta es application/pdf."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "url",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "tenantId",
+      "value": ""
+    },
+    {
+      "key": "emisorId",
+      "value": ""
+    },
+    {
+      "key": "puntoEmisionId",
+      "value": ""
+    },
+    {
+      "key": "claveAcceso",
+      "value": ""
+    },
+    {
+      "key": "webhook_id",
+      "value": ""
+    }
+  ]
+}
