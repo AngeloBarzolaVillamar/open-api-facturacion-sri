@@ -329,6 +329,12 @@ npm run test:cov
 
 ---
 
+## 📋 Changelog
+
+Ver el archivo [CHANGELOG.md](./CHANGELOG.md) para el historial completo de cambios y propuestas de futuras versiones.
+
+---
+
 ## 🤝 Contribuciones
 
 Las contribuciones son bienvenidas. Por favor:
