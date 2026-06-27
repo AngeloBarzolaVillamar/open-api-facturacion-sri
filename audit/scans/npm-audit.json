@@ -1,0 +1,6 @@
+{
+  "tool": "npm-audit",
+  "status": "skipped",
+  "reason": "npm not available in audit environment",
+  "recommendation": "Run 'npm audit --json > audit/scans/npm-audit.json' when npm is available"
+}

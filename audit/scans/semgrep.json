@@ -1,0 +1,5 @@
+{
+  "tool": "semgrep",
+  "status": "skipped",
+  "reason": "semgrep not installed in audit environment"
+}

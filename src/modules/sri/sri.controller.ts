@@ -320,7 +320,15 @@ export class SriController {
     xmlFirmado: string;
   }> {
     this.logger.log('POST /sri/debug/factura-firmada');
-    if (this.configService.get('NODE_ENV') === 'production') {
+
+    // FIX RED TEAM: Doble validación — role guard + environment check
+    // El role check es defensa en profundidad si NODE_ENV no está configurado
+    if (user.rol !== UserRole.SUPERADMIN) {
+      throw new ForbiddenException(
+        'Endpoint de debug solo disponible para SUPERADMIN',
+      );
+    }
+    if (this.configService.get('nodeEnv') === 'production') {
       throw new ForbiddenException('Endpoint deshabilitado en producción');
     }
     await this.emisoresService.validateRucAccess(dto.emisor.ruc, user);

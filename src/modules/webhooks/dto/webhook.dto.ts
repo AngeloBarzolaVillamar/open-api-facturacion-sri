@@ -116,6 +116,11 @@ export class WebhookResponseDto {
   @ApiProperty()
   secreto: string;
 
+  @ApiPropertyOptional({
+    description: 'Secreto en texto plano — solo se devuelve en creación y regeneración. Usar una sola vez para configurar el receptor HMAC.',
+  })
+  secretoPlano?: string;
+
   @ApiProperty()
   activo: boolean;
 

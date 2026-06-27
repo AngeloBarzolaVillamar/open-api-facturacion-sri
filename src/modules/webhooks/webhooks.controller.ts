@@ -8,6 +8,7 @@ import {
   Param,
   Query,
   Logger,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { WebhooksService } from './webhooks.service';
 import { EmisoresService } from '../emisores/emisores.service';
+import { DatabaseService } from '../../database';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtPayload, UserRole } from '../auth/dto/auth.dto';
 import {
@@ -37,6 +39,7 @@ export class WebhooksController {
   constructor(
     private readonly webhooksService: WebhooksService,
     private readonly emisoresService: EmisoresService,
+    private readonly db: DatabaseService,
   ) {}
 
   @Get('eventos')
@@ -95,7 +98,13 @@ export class WebhooksController {
     type: WebhookResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Webhook no encontrado' })
-  async findOne(@Param('id') id: string): Promise<WebhookResponseDto> {
+  async findOne(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<WebhookResponseDto> {
+    if (user.rol !== UserRole.SUPERADMIN) {
+      await this.validateWebhookOwnership(id, user);
+    }
     return this.webhooksService.findOne(id);
   }
 
@@ -129,7 +138,11 @@ export class WebhooksController {
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateWebhookDto,
+    @CurrentUser() user: JwtPayload,
   ): Promise<WebhookResponseDto> {
+    if (user.rol !== UserRole.SUPERADMIN) {
+      await this.validateWebhookOwnership(id, user);
+    }
     return this.webhooksService.update(id, dto);
   }
 
@@ -144,7 +157,13 @@ export class WebhooksController {
     status: 404,
     description: 'Webhook no encontrado o ya inactivo',
   })
-  async delete(@Param('id') id: string): Promise<WebhookResponseDto> {
+  async delete(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<WebhookResponseDto> {
+    if (user.rol !== UserRole.SUPERADMIN) {
+      await this.validateWebhookOwnership(id, user);
+    }
     return this.webhooksService.delete(id);
   }
 
@@ -156,7 +175,13 @@ export class WebhooksController {
     type: WebhookResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Webhook no encontrado' })
-  async regenerateSecret(@Param('id') id: string): Promise<WebhookResponseDto> {
+  async regenerateSecret(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<WebhookResponseDto> {
+    if (user.rol !== UserRole.SUPERADMIN) {
+      await this.validateWebhookOwnership(id, user);
+    }
     return this.webhooksService.regenerateSecret(id);
   }
 
@@ -181,6 +206,7 @@ export class WebhooksController {
   @ApiResponse({ status: 404, description: 'Webhook no encontrado' })
   async getLogs(
     @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ): Promise<{
@@ -189,10 +215,36 @@ export class WebhooksController {
     page: number;
     totalPages: number;
   }> {
+    // FIX RED TEAM JUDGMENT: Validar tenant ownership antes de ex logs
+    if (user.rol !== UserRole.SUPERADMIN) {
+      await this.validateWebhookOwnership(id, user);
+    }
     return this.webhooksService.getLogs(
       id,
       Number(page) || 1,
       Number(limit) || 50,
     );
+  }
+
+  /**
+   * Valida que el webhook pertenece al tenant del usuario.
+   * Lanza ForbiddenException si no tiene acceso.
+   */
+  private async validateWebhookOwnership(
+    webhookId: string,
+    user: JwtPayload,
+  ): Promise<void> {
+    const row = await this.db.queryOne<{ tenant_id: string | null }>(
+      `SELECT tenant_id FROM webhook_configs WHERE id = $1`,
+      [webhookId],
+    );
+    if (!row) {
+      return; // 404 will be thrown by service
+    }
+    if (!row.tenant_id || row.tenant_id !== user.tenantId) {
+      throw new ForbiddenException(
+        'No tienes acceso a este webhook',
+      );
+    }
   }
 }

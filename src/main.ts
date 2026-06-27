@@ -32,6 +32,7 @@ async function bootstrap() {
   );
 
   // ===== SEGURIDAD: CORS restringido =====
+  const nodeEnvForSwagger = configService.get<string>('nodeEnv') || 'development';
   const allowedOriginsStr = configService.get<string>(
     'cors.allowedOrigins',
     'http://localhost:3000,http://localhost:3001',
@@ -40,8 +41,16 @@ async function bootstrap() {
 
   app.enableCors({
     origin: (origin, callback) => {
-      // Permitir requests sin origin (Postman, curl, apps móviles nativas)
-      if (!origin) return callback(null, true);
+      // FIX RED TEAM: En producción, rechazar requests sin Origin header
+      // Solo permitir en development/test para herramientas como Postman/curl
+      if (!origin) {
+        if (nodeEnvForSwagger === 'production') {
+          return callback(
+            new Error('CORS: Requests sin Origin header no permitidos en producción'),
+          );
+        }
+        return callback(null, true);
+      }
       if (allowedOrigins.includes(origin)) return callback(null, true);
       callback(new Error(`CORS: Origen no permitido: ${origin}`));
     },
@@ -63,10 +72,12 @@ async function bootstrap() {
   app.useGlobalFilters(new AllExceptionsFilter());
 
   // ===== SWAGGER — Open API Facturación SRI =====
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('Open API Facturación SRI')
-    .setDescription(
-      `## API Enterprise de Facturación Electrónica para el SRI Ecuador
+  // nodeEnvForSwagger is already declared above (before CORS)
+  if (nodeEnvForSwagger !== 'production') {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('Open API Facturación SRI')
+      .setDescription(
+        `## API Enterprise de Facturación Electrónica para el SRI Ecuador
 
 **Multi-tenant** | **XAdES-BES** | **SOAP SRI** | **Webhooks** | **JWT Auth**
 
@@ -79,51 +90,55 @@ Todos los endpoints requieren un token JWT.
 ### 🌐 Ambientes SRI
 - **Pruebas:** Usar \`"ambiente": "1"\` en las peticiones.
 - **Producción:** Usar \`"ambiente": "2"\` (solo cuando el SRI apruebe la cuenta).`,
-    )
-    .setVersion('2.0.0')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        description: 'Token JWT obtenido en POST /auth/login',
-      },
-      'JWT',
-    )
-    .addTag('Auth - Autenticación', 'Login, registro y gestión de usuarios')
-    .addTag('Status', 'Estado del servidor y health checks')
-    .addTag(
-      'SRI - Facturación Electrónica',
-      'Emisión y gestión de comprobantes electrónicos (Facturas, NC, ND, Retenciones, Guías)',
-    )
-    .addTag('Emisores', 'Gestión de empresas emisoras de documentos')
-    .addTag(
-      'Emisores - Puntos de Emisión',
-      'Gestión de puntos de emisión (cajas/sucursales)',
-    )
-    .addTag(
-      'Emisores - Secuenciales',
-      'Gestión de secuenciales de comprobantes',
-    )
-    .addTag(
-      'Tenants',
-      'Gestión de inquilinos/clientes del sistema multi-tenant',
-    )
-    .addTag('Certificates', 'Gestión de certificados digitales P12')
-    .addTag('Webhooks', 'Configuración de notificaciones por eventos')
-    .addTag('Generate PDF', 'Generación de PDFs con Carbone.io')
-    .addTag('Documents', 'Generación de documentos multi-formato')
-    .addTag('Templates', 'Gestión de plantillas de documentos')
-    .addTag('Signature', 'Firma digital de PDFs')
-    .addTag('Images', 'Gestión de imágenes')
-    .build();
+      )
+      .setVersion('2.0.0')
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'Token JWT obtenido en POST /auth/login',
+        },
+        'JWT',
+      )
+      .addTag('Auth - Autenticación', 'Login, registro y gestión de usuarios')
+      .addTag('Status', 'Estado del servidor y health checks')
+      .addTag(
+        'SRI - Facturación Electrónica',
+        'Emisión y gestión de comprobantes electrónicos (Facturas, NC, ND, Retenciones, Guías)',
+      )
+      .addTag('Emisores', 'Gestión de empresas emisoras de documentos')
+      .addTag(
+        'Emisores - Puntos de Emisión',
+        'Gestión de puntos de emisión (cajas/sucursales)',
+      )
+      .addTag(
+        'Emisores - Secuenciales',
+        'Gestión de secuenciales de comprobantes',
+      )
+      .addTag(
+        'Tenants',
+        'Gestión de inquilinos/clientes del sistema multi-tenant',
+      )
+      .addTag('Certificates', 'Gestión de certificados digitales P12')
+      .addTag('Webhooks', 'Configuración de notificaciones por eventos')
+      .addTag('Generate PDF', 'Generación de PDFs con Carbone.io')
+      .addTag('Documents', 'Generación de documentos multi-formato')
+      .addTag('Templates', 'Gestión de plantillas de documentos')
+      .addTag('Signature', 'Firma digital de PDFs')
+      .addTag('Images', 'Gestión de imágenes')
+      .build();
 
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api', app, document, {
-    swaggerOptions: {
-      persistAuthorization: true, // Mantiene el token JWT entre recargas del Swagger UI
-    },
-  });
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('api', app, document, {
+      swaggerOptions: {
+        persistAuthorization: true, // Mantiene el token JWT entre recargas del Swagger UI
+      },
+    });
+    logger.log(`Swagger habilitado en /api (entorno: ${nodeEnvForSwagger})`);
+  } else {
+    logger.warn('Swagger DESHABILITADO en producción');
+  }
 
   // ===== INICIALIZAR DIRECTORIOS =====
   const templatesDir = STORAGE_PATHS.templates;

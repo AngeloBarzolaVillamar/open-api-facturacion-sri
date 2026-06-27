@@ -25,7 +25,7 @@ services:
     restart: unless-stopped
     command: >
       redis-server
-      --requirepass ${REDIS_PASSWORD:-changeme_prod}
+      --requirepass ${REDIS_PASSWORD:?ERROR: REDIS_PASSWORD must be set in .env.docker}
       --maxmemory 512mb
       --maxmemory-policy allkeys-lru
       --appendonly yes
@@ -34,7 +34,7 @@ services:
       - redis_data:/data
     # No exponer puertos al host en producción — solo acceso interno
     healthcheck:
-      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD:-changeme_prod}', 'ping']
+      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD}', 'ping']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -59,7 +59,7 @@ services:
       # Override Redis to use compose service name
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-changeme_prod}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
 
     # Port mapping (change left port if needed)
     ports:

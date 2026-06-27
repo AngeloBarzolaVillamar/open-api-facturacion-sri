@@ -10,6 +10,7 @@ import {
   UploadedFile,
   BadRequestException,
   NotFoundException,
+  ForbiddenException,
   Logger,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -40,7 +41,7 @@ import { EncryptionService } from '../../common/services/encryption.service';
 import { XmlSignerService } from '../sri/services/xml-signer.service';
 import { EmisoresService } from '../emisores/emisores.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { JwtPayload } from '../auth/dto/auth.dto';
+import { JwtPayload, UserRole } from '../auth/dto/auth.dto';
 
 @ApiTags('Certificates')
 @ApiBearerAuth('JWT')
@@ -98,7 +99,10 @@ export class CertificateController {
   @ApiParam({ name: 'fileName', description: 'Nombre del archivo .p12' })
   @ApiResponse({ status: 200, description: 'Certificado eliminado' })
   @ApiResponse({ status: 404, description: 'Certificado no encontrado' })
-  async deleteCertificate(@Param('fileName') fileName: string) {
+  async deleteCertificate(
+    @Param('fileName') fileName: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
     if (!fileName || !fileName.toLowerCase().endsWith('.p12')) {
       throw new BadRequestException(
         'Nombre de archivo inválido. Debe tener extensión .p12',
@@ -109,21 +113,53 @@ export class CertificateController {
       throw new NotFoundException(`El certificado ${fileName} no existe`);
     }
 
+    // FIX RED TEAM: Validar tenant ownership antes de eliminar
+    // Solo SUPERADMIN puede eliminar certificados de otros tenants
+    if (user.rol !== UserRole.SUPERADMIN) {
+      const emisorCheck = await this.db.queryOne<any>(
+        `SELECT e.id FROM emisores e
+         JOIN tenants t ON e.tenant_id = t.id
+         WHERE e.certificado_nombre = $1 AND e.tenant_id = $2`,
+        [fileName, user.tenantId],
+      );
+      if (!emisorCheck) {
+        throw new ForbiddenException(
+          'No tiene permiso para eliminar este certificado',
+        );
+      }
+    }
+
     // Limpiar datos del certificado en la tabla emisores
-    const cleanResult = await this.db.query(
-      `UPDATE emisores SET
-        certificado_p12 = NULL,
-        certificado_password = NULL,
-        certificado_password_encrypted = NULL,
-        certificado_valido_hasta = NULL,
-        certificado_sujeto = NULL,
-        certificado_nombre = NULL,
-        certificado_updated_at = NULL,
-        updated_at = NOW()
-       WHERE certificado_nombre = $1
-       RETURNING id, ruc`,
-      [fileName],
-    );
+    // FIX RED TEAM: Scope by tenant_id to prevent cross-tenant corruption
+    const cleanResult = user.rol === UserRole.SUPERADMIN
+      ? await this.db.query(
+          `UPDATE emisores SET
+            certificado_p12 = NULL,
+            certificado_password = NULL,
+            certificado_password_encrypted = NULL,
+            certificado_valido_hasta = NULL,
+            certificado_sujeto = NULL,
+            certificado_nombre = NULL,
+            certificado_updated_at = NULL,
+            updated_at = NOW()
+           WHERE certificado_nombre = $1
+           RETURNING id, ruc`,
+          [fileName],
+        )
+      : await this.db.query(
+          `UPDATE emisores SET
+            certificado_p12 = NULL,
+            certificado_password = NULL,
+            certificado_password_encrypted = NULL,
+            certificado_valido_hasta = NULL,
+            certificado_sujeto = NULL,
+            certificado_nombre = NULL,
+            certificado_updated_at = NULL,
+            updated_at = NOW()
+           WHERE certificado_nombre = $1 AND tenant_id = $2
+           RETURNING id, ruc`,
+          [fileName, user.tenantId],
+        );
 
     // Eliminar archivo físico
     this.certificateService.deleteCertificate(fileName);

@@ -1,0 +1,5 @@
+{
+  "tool": "trivy",
+  "status": "skipped",
+  "reason": "trivy not installed in audit environment"
+}

@@ -1,0 +1,5 @@
+{
+  "tool": "gitleaks",
+  "status": "skipped",
+  "reason": "gitleaks not installed in audit environment"
+}

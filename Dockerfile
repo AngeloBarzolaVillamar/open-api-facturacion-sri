@@ -53,6 +53,12 @@ COPY --from=builder /app/dist ./dist
 RUN mkdir -p /data/templates /data/pdfs /data/certs /data/xmls \
     /data/pdfs/con_firma /data/pdfs/others /data/pdfs/documents /data/pdfs/images
 
+# FIX RED TEAM: Ejecutar como usuario no-root para reducir superficie de ataque
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -u 1001 -S appuser -G appgroup && \
+    chown -R appuser:appgroup /app /data
+USER appuser
+
 # Expose the application port
 EXPOSE 3001
 
