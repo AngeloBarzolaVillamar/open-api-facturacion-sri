@@ -169,7 +169,7 @@ export class EmisoresService {
     }
 
     // Verificar que el emisor pertenece al tenant del usuario
-    if (emisor.tenantId && emisor.tenantId !== user.tenantId) {
+    if (!emisor.tenantId || emisor.tenantId !== user.tenantId) {
       throw new ForbiddenException('No tienes acceso a este emisor');
     }
 
@@ -430,7 +430,8 @@ export class EmisoresService {
     await this.db.query(
       `UPDATE emisores SET
         certificado_p12 = $1,
-        certificado_password = $2,
+        certificado_password_encrypted = $2,
+        certificado_password = NULL,
         certificado_valido_hasta = $3,
         certificado_sujeto = $4,
         certificado_updated_at = NOW(),
@@ -458,6 +459,7 @@ export class EmisoresService {
       `UPDATE emisores SET
         certificado_p12 = NULL,
         certificado_password = NULL,
+        certificado_password_encrypted = NULL,
         certificado_valido_hasta = NULL,
         certificado_sujeto = NULL,
         certificado_updated_at = NULL,
