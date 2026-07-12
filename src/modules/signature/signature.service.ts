@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { existsSync, readFileSync } from 'fs';
-import { join } from 'path';
+import { join, resolve } from 'path';
 import * as forge from 'node-forge';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import * as QRCode from 'qrcode';
@@ -263,11 +263,25 @@ export class SignatureService {
         `Iniciando proceso de firma con certificado: ${certFile}`,
       );
 
+      // Validate certFile to prevent path traversal (CWE-22)
+      if (
+        !certFile ||
+        certFile.includes('..') ||
+        certFile.includes('/') ||
+        certFile.includes('\\')
+      ) {
+        throw new BadRequestException('Nombre de certificado inválido');
+      }
+
       // Verify certificate exists
-      const certPath = join(this.certsDir, certFile);
+      const certPath = resolve(join(this.certsDir, certFile));
+      const resolvedCertsDir = resolve(this.certsDir);
+      if (!certPath.startsWith(resolvedCertsDir + '/') && !certPath.startsWith(resolvedCertsDir + '\\')) {
+        throw new BadRequestException('Ruta fuera del directorio permitido');
+      }
       if (!existsSync(certPath)) {
-        throw new Error(
-          `El certificado ${certFile} no existe en el directorio de certificados`,
+        throw new BadRequestException(
+          'El certificado no existe en el directorio de certificados',
         );
       }
 
@@ -366,10 +380,11 @@ export class SignatureService {
         return pdfWithVisual;
       }
     } catch (error) {
-      this.logger.error(
-        `Error en el proceso de firma: ${(error as Error).message}`,
-      );
-      throw error;
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      this.logger.error('Error en el proceso de firma');
+      throw new BadRequestException('Error al procesar la firma del documento');
     }
   }
 }
