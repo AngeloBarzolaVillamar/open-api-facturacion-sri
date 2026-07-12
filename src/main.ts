@@ -22,6 +22,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
   const logger = new Logger('Bootstrap');
+  const nodeEnv = configService.get<string>('nodeEnv') || 'development';
+  const port = configService.get<number>('port')!;
 
   // ===== SEGURIDAD: HTTP Headers (Helmet) =====
   app.use(
@@ -40,10 +42,14 @@ async function bootstrap() {
 
   app.enableCors({
     origin: (origin, callback) => {
-      // Permitir requests sin origin (Postman, curl, apps móviles nativas)
-      if (!origin) return callback(null, true);
+      if (!origin) {
+        if (nodeEnv === 'production') {
+          return callback(new Error('CORS: Origin requerido en producción'));
+        }
+        return callback(null, true);
+      }
       if (allowedOrigins.includes(origin)) return callback(null, true);
-      callback(new Error(`CORS: Origen no permitido: ${origin}`));
+      callback(new Error('CORS: Origen no permitido'));
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-ID'],
@@ -63,7 +69,8 @@ async function bootstrap() {
   app.useGlobalFilters(new AllExceptionsFilter());
 
   // ===== SWAGGER — Open API Facturación SRI =====
-  const swaggerConfig = new DocumentBuilder()
+  if (nodeEnv !== 'production') {
+    const swaggerConfig = new DocumentBuilder()
     .setTitle('Open API Facturación SRI')
     .setDescription(
       `## API Enterprise de Facturación Electrónica para el SRI Ecuador
@@ -118,12 +125,16 @@ Todos los endpoints requieren un token JWT.
     .addTag('Images', 'Gestión de imágenes')
     .build();
 
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api', app, document, {
-    swaggerOptions: {
-      persistAuthorization: true, // Mantiene el token JWT entre recargas del Swagger UI
-    },
-  });
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('api', app, document, {
+      swaggerOptions: {
+        persistAuthorization: true,
+      },
+    });
+    logger.log(`Swagger UI disponible en http://localhost:${port}/api`);
+  } else {
+    logger.warn('Swagger UI deshabilitado en producción');
+  }
 
   // ===== INICIALIZAR DIRECTORIOS =====
   const templatesDir = STORAGE_PATHS.templates;
@@ -135,9 +146,7 @@ Todos los endpoints requieren un token JWT.
   void STORAGE_PATHS.pdfsImages;
 
   // ===== ARRANQUE =====
-  const nodeEnv = configService.get<string>('nodeEnv') || 'development';
   const envFile = detectEnvFile();
-  const port = configService.get<number>('port')!;
   const publicUrl = configService.get<string>('publicUrl')!;
   const dbHost = configService.get<string>('database.host') || 'No configurado';
   const dbName = configService.get<string>('database.name') || 'No configurado';
