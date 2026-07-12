@@ -320,8 +320,11 @@ export class SriController {
     xmlFirmado: string;
   }> {
     this.logger.log('POST /sri/debug/factura-firmada');
-    if (this.configService.get('NODE_ENV') === 'production') {
+    if (this.configService.get('nodeEnv') === 'production') {
       throw new ForbiddenException('Endpoint deshabilitado en producción');
+    }
+    if (user.rol !== UserRole.SUPERADMIN) {
+      throw new ForbiddenException('Solo SUPERADMIN puede usar este endpoint');
     }
     await this.emisoresService.validateRucAccess(dto.emisor.ruc, user);
     return this.sriService.generarFacturaFirmadaDebug(dto);
