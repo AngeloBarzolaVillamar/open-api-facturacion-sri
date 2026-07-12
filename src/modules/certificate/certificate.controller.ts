@@ -16,6 +16,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { unlinkSync, existsSync, readFileSync } from 'fs';
 import { join } from 'path';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   ApiTags,
   ApiOperation,
@@ -54,6 +55,7 @@ export class CertificateController {
     private readonly encryptionService: EncryptionService,
     private readonly xmlSignerService: XmlSignerService,
     private readonly emisoresService: EmisoresService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   /**
@@ -132,6 +134,11 @@ export class CertificateController {
     this.logger.log(
       `Certificado ${fileName} eliminado. Emisores actualizados: ${emisoresLimpiados}`,
     );
+
+    this.eventEmitter.emit('certificado.eliminado', {
+      fileName,
+      emisoresActualizados: emisoresLimpiados,
+    });
 
     return {
       success: true,
@@ -251,6 +258,13 @@ export class CertificateController {
       if (validation.warning) {
         response.data.warning = validation.warning;
       }
+
+      this.eventEmitter.emit('certificado.subido', {
+        fileName: file.filename,
+        size: file.size,
+        subject: validation.subject?.commonName || '',
+        tenantId: user.tenantId,
+      });
 
       // If RUC is provided, bind certificate to emisor
       if (body.ruc) {

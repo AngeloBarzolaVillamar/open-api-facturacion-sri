@@ -7,6 +7,29 @@
 # Copy .env.docker.example to .env.docker and customize.
 
 services:
+  # ─── Carbone.io (Generación de PDFs) ───
+  carbone:
+    image: carbone/carbone-ee:latest
+    container_name: open-api-carbone
+    restart: unless-stopped
+    environment:
+      - CARBONE_EE_STUDIO=true
+    ports:
+      - '${CARBONE_PORT:-4000}:4000'
+    volumes:
+      - ${HOST_TEMPLATES_PATH:-../templates}:/app/template
+    healthcheck:
+      test: ['CMD-SHELL', 'bash -c "echo > /dev/tcp/localhost/4000"']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '5m'
+        max-file: '2'
+
   # ─── Redis (BullMQ + Cache) ───
   redis:
     image: redis:7-alpine
@@ -49,6 +72,8 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      # Carbone API dentro del compose network
+      CARBONE_API: http://carbone:4000
 
     # Port mapping
     ports:
@@ -63,6 +88,8 @@ services:
 
     depends_on:
       redis:
+        condition: service_healthy
+      carbone:
         condition: service_healthy
 
     # Health check

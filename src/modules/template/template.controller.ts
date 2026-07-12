@@ -12,6 +12,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   ApiTags,
   ApiOperation,
@@ -29,7 +30,10 @@ import {
 @ApiTags('Templates')
 @Controller('templates')
 export class TemplateController {
-  constructor(private readonly templateService: TemplateService) {}
+  constructor(
+    private readonly templateService: TemplateService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   /**
    * GET /templates
@@ -115,6 +119,12 @@ export class TemplateController {
 
     const templateInfo = this.templateService.getTemplateInfo(file.filename);
 
+    this.eventEmitter.emit('plantilla.creada', {
+      id: templateInfo.id,
+      name: templateInfo.name,
+      extension: templateInfo.extension,
+    });
+
     return {
       success: true,
       data: {
@@ -155,6 +165,11 @@ export class TemplateController {
     const templateInfo = templates.find((t) => t.id === id || t.name === id);
 
     this.templateService.deleteTemplate(id);
+
+    this.eventEmitter.emit('plantilla.eliminada', {
+      id: templateInfo?.id || id,
+      name: templateInfo?.name || id,
+    });
 
     return {
       success: true,
